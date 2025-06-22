@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Chat Room</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 600px;
+      margin: 2rem auto;
+    }
+
+    #msgs {
+      height: 300px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      padding: 1rem;
+    }
+
+    .system {
+      color: #888;
+      font-style: italic;
+    }
+
+    .user {
+      margin: 0.25rem 0;
+    }
+
+    .user .name {
+      font-weight: bold;
+    }
+
+    form {
+      display: flex;
+      margin-top: 1rem;
+    }
+
+    input {
+      flex: 1;
+      padding: 0.5rem;
+    }
+
+    button {
+      padding: 0.5rem 1rem;
+      margin-left: 0.5rem;
+    }
+
+    #leaveBtn {
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+
+<body>
+  <h2 id="roomTitle">Chat Room</h2>
+  <button id="leaveBtn">Leave Room</button>
+
+  <div id="msgs"></div>
+
+  <form id="f">
+    <input id="m" autocomplete="off" placeholder="Type a message…" />
+    <button type="submit">Send</button>
+  </form>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const code = location.pathname.split('/').pop();
+    const storageKey = `chatName_${code}`;
+    const savedName = localStorage.getItem(storageKey);
+    const query = { room: code };
+    if (savedName) query.name = savedName;
+
+    // Create socket but don't auto-connect yet
+    const socket = io({
+      autoConnect: false,
+      query
+    });
+
+    const msgs = document.getElementById('msgs');
+    const form = document.getElementById('f');
+    const input = document.getElementById('m');
+    const leaveBtn = document.getElementById('leaveBtn');
+    const roomTitle = document.getElementById('roomTitle');
+
+    // Append helper
+    function append(msg, opts = {}) {
+      const div = document.createElement('div');
+      if (opts.system) {
+        div.textContent = msg;
+        div.classList.add('system');
+      } else {
+        div.innerHTML = `<span class="name">${opts.name}</span>: ${msg}`;
+        div.classList.add('user');
+      }
+      msgs.append(div);
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    // Receive your assigned (or re-assigned) identity
+    socket.on('yourIdentity', ({ name }) => {
+      localStorage.setItem(storageKey, name);
+      roomTitle.textContent = `Chat Room — ${name}`;
+    });
+
+    // Receive full history
+    socket.on('chatHistory', history => {
+      msgs.innerHTML = '';
+      history.forEach(m => {
+        append(m.content, { name: m.participant_name });
+      });
+    });
+
+    // Receive new messages / join / leave notices
+    socket.on('message', data => {
+      if (data.system) append(data.text, { system: true });
+      else append(data.text, { name: data.name });
+    });
+
+    // Now that handlers are ready, connect
+    socket.connect();
+
+    // Send new chat messages
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      if (!input.value.trim()) return;
+      socket.emit('chatMessage', input.value);
+      input.value = '';
+    });
+
+    // Leave room
+    leaveBtn.addEventListener('click', () => {
+      localStorage.removeItem(storageKey);
+      location.href = '/';
+    });
+  </script>
+</body>
+
+</html>
