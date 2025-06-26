@@ -2,11 +2,10 @@
   "name": "anopinions",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
-    "dev": "nodemon index.js",
-    "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
   },
   "keywords": [],
   "author": "",
@@ -14,11 +13,7 @@
   "type": "module",
   "dependencies": {
     "dotenv": "^16.5.0",
-    "express": "^5.1.0",
-    "next": "^15.3.4",
-    "pg": "^8.16.2",
-    "socket.io": "^4.8.1",
-    "uuid": "^11.1.0"
+    "next": "^15.3.4"
   },
   "devDependencies": {
     "@types/node": "^24.0.3",
